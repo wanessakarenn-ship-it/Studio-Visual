@@ -1,0 +1,3 @@
+# Editor Core — initial implementation
+Pure operations on validated v2 documents, structural sharing, subtree insertion/move/duplication/removal, flags, props and responsive styles. Duplicate remaps internal anchors and links. Every resulting document is validated. Position index is interpreted after removing the source from its previous parent.
+Interim history uses structurally shared snapshots bounded to 100 entries, with transaction grouping/cancellation and redo invalidation. This is deliberately not the final Immer patch history: no new dependency or lockfile change in this delivery. Memory budget, patch implementation and storage recovery remain pending. Existing v1 UI is untouched.
