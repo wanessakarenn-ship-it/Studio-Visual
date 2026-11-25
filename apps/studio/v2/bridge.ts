@@ -1,10 +1,16 @@
 import type {StudioDocument,StudioNode} from '../../../packages/schema/v2';
 import {renderStaticDocument} from '../../../packages/renderer/v2/ssr';
-export type CanvasMessage={kind:'ready'}|{kind:'select';id:string}|{kind:'edit';id:string;text:string};
+import {resolveDrop,type DropZone} from './drop';
+export type CanvasMessage={kind:'ready'}|{kind:'select';id:string}|{kind:'edit';id:string;text:string}|{kind:'drop';id:string;targetId:string;zone:DropZone};
 export function parseCanvasMessage(value:unknown,channel:string,doc:StudioDocument):CanvasMessage|null{
  if(typeof value!=='object'||value===null||!('channel' in value)||value.channel!==channel||!('kind' in value))return null;
  if(value.kind==='ready')return {kind:'ready'};
  if(!('id' in value)||typeof value.id!=='string'||!Object.hasOwn(doc.nodes,value.id))return null;
+ if(value.kind==='drop'){
+  if(!('targetId' in value)||typeof value.targetId!=='string'||!('zone' in value)||(value.zone!=='before'&&value.zone!=='inside'&&value.zone!=='after'))return null;
+  if(!resolveDrop(doc,value.id,value.targetId,value.zone).ok)return null;
+  return {kind:'drop',id:value.id,targetId:value.targetId,zone:value.zone};
+ }
  if(value.kind==='select')return {kind:'select',id:value.id};
  const node=doc.nodes[value.id];
  if(value.kind==='edit'&&'text' in value&&typeof value.text==='string'&&value.text.length<=10000&&(node.type==='heading'||node.type==='text'||node.type==='button')){
@@ -26,9 +32,12 @@ export function buildCanvasHTML(doc:StudioDocument,channel:string):string{
  const walk=(id:string,ancestorLocked:boolean)=>{const node=doc.nodes[id],isLocked=ancestorLocked||node.flags.locked;if(isLocked)locked.add(id);node.children.forEach(child=>walk(child,isLocked));};
  walk(doc.rootId,false);
  const editable=Object.values(doc.nodes).filter(n=>!locked.has(n.id)&&['heading','text','button'].includes(n.type)).map(n=>n.id);
+ const draggable=Object.values(doc.nodes).filter(n=>n.id!==doc.rootId&&!locked.has(n.id)).map(n=>n.id);
+ const containers=Object.values(doc.nodes).filter(n=>['root','section','container'].includes(n.type)).map(n=>n.id);
  const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'nonce-'+channel+'\'; style-src \'unsafe-inline\'; img-src https:; base-uri \'none\'; form-action \'none\'">';
- const script=`<style>.sv-hover{outline:1px dashed #7864e8!important;outline-offset:-1px}.sv-selected{outline:2px solid #7864e8!important;outline-offset:-2px}.sv-page button:disabled{pointer-events:auto}.sv-page [contenteditable]{cursor:text!important;white-space:pre-wrap}</style><script nonce="${channel}">
+ const script=`<style>.sv-hover{outline:1px dashed #7864e8!important;outline-offset:-1px}.sv-selected{outline:2px solid #7864e8!important;outline-offset:-2px}.sv-page button:disabled{pointer-events:auto}.sv-drop-before{box-shadow:inset 0 3px #5945c2!important}.sv-drop-after{box-shadow:inset 0 -3px #5945c2!important}.sv-drop-inside{outline:3px dashed #5945c2!important;outline-offset:-3px}.sv-page [contenteditable]{cursor:text!important;white-space:pre-wrap}</style><script nonce="${channel}">
  (()=>{const channel=${JSON.stringify(channel)},editable=new Set(${JSON.stringify(editable)});
+ const draggable=new Set(${JSON.stringify(draggable)}),containers=new Set(${JSON.stringify(containers)}),rootId=${JSON.stringify(doc.rootId)};
  const send=(kind,extra={})=>parent.postMessage({channel,kind,...extra},'*');
  const target=e=>e instanceof Element?e.closest('[class*="sv-node-"]'):null;
  const idOf=e=>e&&Array.from(e.classList).find(c=>c.startsWith('sv-node-'))?.slice(8);
@@ -42,6 +51,21 @@ export function buildCanvasHTML(doc:StudioDocument,channel:string):string{
  document.addEventListener('focusout',e=>{if(e.target===editing)finish(true);});
  document.addEventListener('keydown',e=>{if(!editing||e.isComposing)return;if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();const node=editing;finish(e.key==='Enter');node.blur();}});
  window.addEventListener('message',e=>{if(e.source!==parent||e.data?.channel!==channel||e.data?.kind!=='selection')return;select(typeof e.data.id==='string'?e.data.id:null);});
+ let dragSource=null,marked=null;
+ const clearDrop=()=>{if(marked)marked.classList.remove('sv-drop-before','sv-drop-after','sv-drop-inside');marked=null;};
+ for(const id of draggable){const el=document.getElementsByClassName('sv-node-'+id)[0];if(el)el.setAttribute('draggable','true');}
+ const destination=e=>{
+  const n=target(e.target),id=idOf(n);if(!n||!id||id===dragSource)return null;
+  const r=n.getBoundingClientRect(),ratio=(e.clientY-r.top)/Math.max(r.height,1);
+  const zone=id===rootId?'inside':containers.has(id)&&ratio>.25&&ratio<.75?'inside':ratio<.5?'before':'after';
+  const source=document.getElementsByClassName('sv-node-'+dragSource)[0];
+  if(!source||source.contains(n))return null;
+  return {n,id,zone};
+ };
+ document.addEventListener('dragstart',e=>{const n=target(e.target),id=idOf(n);if(editing||!draggable.has(id)){e.preventDefault();return;}dragSource=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);});
+ document.addEventListener('dragover',e=>{if(!dragSource)return;clearDrop();const d=destination(e);if(!d)return;e.preventDefault();e.dataTransfer.dropEffect='move';marked=d.n;marked.classList.add('sv-drop-'+d.zone);});
+ document.addEventListener('drop',e=>{if(!dragSource)return;e.preventDefault();const d=destination(e);if(d)send('drop',{id:dragSource,targetId:d.id,zone:d.zone});dragSource=null;clearDrop();});
+ document.addEventListener('dragend',()=>{dragSource=null;clearDrop();});
  send('ready');
  })();</script>`;
  return html.replace('<head>','<head>'+csp).replace(/<\/body>$/,script+'</body>').replace(/<\/body><\/html>$/,script+'</body></html>');
