@@ -16,7 +16,7 @@ function NodeView({node,document,assets}:{node:StudioNode;document:StudioDocumen
   case 'divider':return <hr {...attrs}/>;
  }
 }
-export function PageRenderer({document,assets={}}:{document:StudioDocument;assets?:AssetSources}){
+export function PageRenderer({document,assets={},inlineCSS=true}:{document:StudioDocument;assets?:AssetSources;inlineCSS?:boolean}){
  const valid=DocumentSchema.parse(document);
- return <><style>{generateCSS(valid)}</style><NodeView document={valid} node={valid.nodes[valid.rootId]} assets={assets}/></>;
+ return <>{inlineCSS&&<style>{generateCSS(valid)}</style>}<NodeView document={valid} node={valid.nodes[valid.rootId]} assets={assets}/></>;
 }

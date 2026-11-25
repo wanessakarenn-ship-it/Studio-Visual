@@ -1,0 +1,2 @@
+# Studio Export
+ZIP32 STORE archive (no compression, no new dependency) with CRC32, central directory and safe unique paths. HTML uses the same SSR engine with external CSS; only referenced local assets are included by UUID. JSON and README included. Missing local assets block export; placeholder, external URL, empty alt, CTA and SEO warnings are advisory. External images and external links remain network-dependent. No server deployment, form submission, ZIP reimport or browser acceptance yet. Archive interoperability and browser E2E are required before MVP release.
