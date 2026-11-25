@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {ResponsiveStylesSchema} from './styles';
 export const IdSchema=z.string().uuid();
 export function isSafeHref(value:string):boolean {
- if(!value||value.length>2048||/[\u0000-\u0020\u007f\\]/.test(value))return false;
+ if(!value||value.length>2048||Array.from(value).some(c=>c.charCodeAt(0)<=32||c.charCodeAt(0)===127||c.charCodeAt(0)===92))return false;
  if(value.startsWith('#'))return /^#[a-zA-Z][a-zA-Z0-9_-]*$/.test(value);
  if(value.startsWith('/'))return !value.startsWith('//');
  try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)&&!u.username&&!u.password;}catch{return false;}
