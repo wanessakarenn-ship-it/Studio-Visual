@@ -1,0 +1,2 @@
+# Studio Brand
+Page-scoped typed tokens: color, fontSize, space and radius. Create/update, usage count, deletion protection, responsive binding and detach to literal. Updates are validated and undoable. Global token changes intentionally affect all linked nodes, including locked nodes; locking prevents direct edits, not brand changes. Existing literals are not automatically replaced. UI edits RGB colors; alpha editing, font family management, cross-page brand kits and browser E2E remain pending. No new dependencies or deployment.
