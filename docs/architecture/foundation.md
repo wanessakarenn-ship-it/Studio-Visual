@@ -1,0 +1,3 @@
+# Foundation — ADR 001
+
+Accepted for initial development: structured versioned page documents, React renderer, Zod validation and local browser persistence. This is a single-page prototype, not a multi-tenant SaaS. No backend, publishing, drag-and-drop, nested elements, independent preview or static export yet. Button actions are not implemented. The schema will evolve through explicit migrations. No corporate code or assets reused. Dependency lockfile and reproducible CI are pending. Run npm install, npm test, npm run build, npm run dev. Node 22 recommended.
