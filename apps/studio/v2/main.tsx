@@ -1,0 +1,59 @@
+import {useEffect,useRef,useState,type ChangeEvent} from 'react';
+import {createRoot} from 'react-dom/client';
+import golden from '../../../packages/schema/v2/fixtures/golden-page.json';
+import {DocumentSchema,acceptsChild,resolveStyle,type StudioDocument,type StudioNode,type Breakpoint} from '../../../packages/schema/v2';
+import {insertNode,moveNode,duplicateNode,removeNode,updateProps,updateStyles,resetStyle,renameNode,setNodeFlags,parentOf,type Result} from '../../../packages/editor-core';
+import {createSession,applyResult,undo,redo,type Session} from '../../../packages/editor-core/history';
+import {LocalStorageAdapter,exportJSON,importJSON,readLegacy,recoverAsCopy,type LoadResult} from '../../../packages/storage';
+import {Autosave,type SaveState} from '../../../packages/storage/autosave';
+import {renderStaticDocument} from '../../../packages/renderer/v2/ssr';
+import './studio.css';
+const storage=new LocalStorageAdapter(localStorage);
+const pointer='studio-visual-v2-active';
+const uid=()=>crypto.randomUUID();
+type Kind='section'|'container'|'heading'|'text'|'button'|'divider';
+const labels:Record<Kind,string>={section:'Seção',container:'Contêiner',heading:'Título',text:'Texto',button:'Botão',divider:'Divisor'};
+function fresh(example:boolean):StudioDocument{
+ if(example)return DocumentSchema.parse({...golden,id:uid()});
+ const rootId=uid(),id=uid();return DocumentSchema.parse({schemaVersion:2,id,title:'Nova página',rootId,nodes:{[rootId]:{id:rootId,type:'root',name:'Página',props:{},children:[],styles:{base:{}},flags:{hidden:false,locked:false}}},tokens:{color:{},space:{},radius:{},fontSize:{}},metadata:{language:'pt-BR'}});
+}
+function newNode(type:Kind):StudioNode{
+ const base={id:uid(),name:labels[type],children:[],styles:{base:{}},flags:{hidden:false,locked:false}};
+ switch(type){case 'heading':return {...base,type,props:{text:'Novo título',level:2}};case 'text':return {...base,type,props:{text:'Seu texto aqui'}};case 'button':return {...base,type,props:{label:'Saiba mais'}};default:return {...base,type,props:{}};}
+}
+function download(raw:string,name:string){const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function Layers({doc,id,selected,select,depth=0}:{doc:StudioDocument;id:string;selected:string|null;select:(id:string)=>void;depth?:number}){
+ const n=doc.nodes[id];return <li><button className="layer" style={{paddingLeft:12+depth*14}} aria-pressed={selected===id} onClick={()=>select(id)}>{n.flags.locked?'🔒 ':''}{n.flags.hidden?'◌ ':''}{n.name||n.type}</button>{n.children.length>0&&<ul>{n.children.map(child=><Layers key={child} doc={doc} id={child} selected={selected} select={select} depth={depth+1}/>)}</ul>}</li>;
+}
+function App(){
+ const [session,setSession]=useState<Session|null>(null),[device,setDevice]=useState<Breakpoint>('base'),[status,setStatus]=useState<SaveState>('dirty'),[message,setMessage]=useState(''),[preview,setPreview]=useState(false),[recovery,setRecovery]=useState<LoadResult|null>(null);
+ const saver=useRef<Autosave|null>(null),frame=useRef<HTMLIFrameElement>(null),latest=useRef<Session|null>(null);
+ const [busy,setBusy]=useState(false);
+ function open(doc:StudioDocument,revision:number|null){
+  saver.current?.dispose();
+  saver.current=new Autosave(storage,doc.id,revision,(state,error)=>{setStatus(state);if(error)setMessage(String(error));});
+  const next=createSession(doc);latest.current=next;setSession(next);setRecovery(null);setStatus(revision===null?'dirty':'saved');
+  try{localStorage.setItem(pointer,doc.id);}catch(e){setMessage(String(e));}
+  if(revision===null)saver.current.schedule(doc);
+ }
+ useEffect(()=>{let active=true;async function restore(){try{const id=localStorage.getItem(pointer);if(!id)return;const r=await storage.load(id);if(!active)return;if(r.status==='ready')open(r.value.document,r.value.revision);else if(r.status!=='empty')setRecovery(r);}catch(e){if(active)setMessage(String(e));}}void restore();return()=>{active=false;saver.current?.dispose();};},[]);
+ useEffect(()=>{const handler=(e:BeforeUnloadEvent)=>{if(status==='dirty'||status==='saving'||status==='error'){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',handler);return()=>window.removeEventListener('beforeunload',handler);},[status]);
+ function change(next:Session){const old=latest.current;if(next===old)return;latest.current=next;setSession(next);if(next.document!==old?.document)saver.current?.schedule(next.document);}
+ function command(result:Result){if(!result.ok){setMessage(result.error);return;}setMessage('');if(latest.current)change(applyResult(latest.current,result));}
+ async function switchDocument(doc:StudioDocument){setBusy(true);try{await saver.current?.flush();open(doc,null);}catch(e){setMessage('Não foi possível salvar o documento atual: '+String(e));}finally{setBusy(false);}}
+ async function importFile(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];e.target.value='';if(!file)return;try{if(file.size>32*1024*1024)throw Error('Arquivo excede o limite');const doc=importJSON(await file.text(),uid);await switchDocument(DocumentSchema.parse({...doc,id:uid()}));}catch(err){setMessage(String(err));}}
+ function select(id:string){if(latest.current)change({...latest.current,selectedId:id});}
+ const doc=session?.document,selected=doc&&session?.selectedId?doc.nodes[session.selectedId]:undefined;
+ function add(type:Kind){if(!doc)return;const n=newNode(type);let parent=selected&&acceptsChild(selected.type,type)?selected:selected?parentOf(doc,selected.id):undefined;while(parent&&!acceptsChild(parent.type,type))parent=parentOf(doc,parent.id);parent??=doc.nodes[doc.rootId];if(!acceptsChild(parent.type,type)){setMessage('Adicione uma seção ou contêiner primeiro.');return;}command(insertNode(doc,{rootId:n.id,nodes:{[n.id]:n}},{parentId:parent.id,index:parent.children.length}));}
+ function reorder(delta:number){if(!doc||!selected)return;const p=parentOf(doc,selected.id);if(p)command(moveNode(doc,selected.id,{parentId:p.id,index:p.children.indexOf(selected.id)+delta}));}
+ const html=doc?renderStaticDocument(doc):'';
+ const style=selected?resolveStyle(selected.styles,device):{};
+ const stateLabel={dirty:'Alterações não salvas',saving:'Salvando…',saved:'Salvo neste navegador',error:'Falha ao salvar'}[status];
+ return <div className="studio"><header className="toolbar"><a href="./" className="brand">Studio Visual <small>Creative Digital Lab</small></a><span role="status">{doc?stateLabel:'Canvas v2 experimental'}</span>{session&&<><button disabled={!session.past.length} onClick={()=>change(undo(session))}>Desfazer</button><button disabled={!session.future.length} onClick={()=>change(redo(session))}>Refazer</button><select aria-label="Dispositivo" value={device} onChange={e=>setDevice(e.target.value as Breakpoint)}><option value="base">Desktop</option><option value="tablet">Tablet</option><option value="mobile">Mobile</option></select><button onClick={()=>setPreview(!preview)}>{preview?'Editar':'Prévia'}</button><button onClick={()=>{void saver.current?.flush().catch(e=>setMessage(String(e)));}}>Salvar</button><button onClick={()=>download(exportJSON(session.document),'studio-page.json')}>Backup JSON</button></>}<a href="./">Editor legado</a></header>
+ {message&&<p className="notice" role="alert">{message}<button onClick={()=>setMessage('')}>Fechar</button></p>}
+ {!doc?<main className="welcome"><h1>Crie sua próxima página</h1><p>Os documentos ficam neste navegador. Exporte backups regularmente.</p>{recovery&&recovery.status!=='empty'&&recovery.status!=='ready'&&<section className="notice"><p>Documento inválido. O original foi preservado.</p><button onClick={()=>download(recovery.raw,'studio-recovery.json')}>Baixar dados originais</button>{recovery.status==='recovered'&&<button onClick={()=>open(recoverAsCopy(recovery,uid()),null)}>Recuperar como cópia</button>}</section>}<button disabled={busy} onClick={()=>void switchDocument(fresh(false))}>Página em branco</button><button disabled={busy} onClick={()=>void switchDocument(fresh(true))}>Abrir Golden Page</button><button onClick={()=>{try{const r=readLegacy(localStorage,uid);if(r)void switchDocument(r.document);else setMessage('Nenhum documento legado encontrado.');}catch(e){setMessage(String(e));}}}>Importar legado</button><label>Importar JSON<input type="file" accept=".json,application/json" onChange={e=>void importFile(e)}/></label></main>:<main className={'editor '+(preview?'preview':'')}>
+ {!preview&&<aside><h2>Elementos</h2><div className="elements">{(Object.keys(labels) as Kind[]).map(type=><button key={type} onClick={()=>add(type)}>{labels[type]}</button>)}</div><h2>Camadas</h2><ul><Layers doc={doc} id={doc.rootId} selected={session?.selectedId??null} select={select}/></ul></aside>}
+ <section className="workspace"><div className="workspace-label">{doc.title} · {device==='base'?'1440':device==='tablet'?'768':'390'} px</div><iframe ref={frame} title="Prévia isolada da página" sandbox="" srcDoc={html} style={{width:device==='base'?1440:device==='tablet'?768:390}}/></section>
+ {!preview&&<aside><h2>Propriedades</h2>{selected?<><label>Nome<input value={selected.name} maxLength={120} onChange={e=>command(renameNode(doc,selected.id,e.target.value))}/></label>{(selected.type==='heading'||selected.type==='text'||selected.type==='button')&&<label>Conteúdo<textarea value={selected.type==='button'?selected.props.label:selected.props.text} maxLength={10000} onChange={e=>command(updateProps(doc,selected.id,selected.type==='button'?{label:e.target.value}:{text:e.target.value}))}/></label>}{selected.type==='heading'&&<label>Nível<select value={selected.props.level} onChange={e=>command(updateProps(doc,selected.id,{level:Number(e.target.value)}))}>{[1,2,3,4,5,6].map(n=><option key={n} value={n}>H{n}</option>)}</select></label>}{selected.type==='button'&&<label>Link<input key={selected.id} defaultValue={selected.props.href??''} onBlur={e=>command(updateProps(doc,selected.id,{href:e.target.value||undefined}))}/></label>}<label>Cor<input type="color" value={typeof style.color==='string'?style.color.slice(0,7):'#242433'} onChange={e=>command(updateStyles(doc,selected.id,device,{color:e.target.value}))}/></label><button onClick={()=>command(resetStyle(doc,selected.id,device,'color'))}>Restaurar cor herdada</button><label>Tamanho (px)<input type="number" min={1} max={200} defaultValue={18} key={selected.id+device} onBlur={e=>command(updateStyles(doc,selected.id,device,{fontSize:{value:Number(e.target.value),unit:'px'}}))}/></label>{selected.id!==doc.rootId&&<><label><input type="checkbox" checked={selected.flags.hidden} onChange={e=>command(setNodeFlags(doc,selected.id,{hidden:e.target.checked}))}/>Ocultar</label><label><input type="checkbox" checked={selected.flags.locked} onChange={e=>command(setNodeFlags(doc,selected.id,{locked:e.target.checked}))}/>Bloquear</label><button onClick={()=>reorder(-1)}>Subir</button><button onClick={()=>reorder(1)}>Descer</button><button onClick={()=>command(duplicateNode(doc,selected.id,uid))}>Duplicar</button><button onClick={()=>command(removeNode(doc,selected.id))}>Excluir</button></>}</>:<p>Selecione uma camada para editar.</p>}<hr/><button disabled={busy} onClick={()=>void switchDocument(fresh(false))}>Nova página</button><button disabled={busy} onClick={()=>void switchDocument(fresh(true))}>Nova Golden Page</button><label>Importar cópia JSON<input type="file" accept=".json,application/json" onChange={e=>void importFile(e)}/></label></aside>}</main>}</div>;
+}
+createRoot(document.getElementById('root')!).render(<App/>);
