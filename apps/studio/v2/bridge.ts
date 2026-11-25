@@ -1,4 +1,5 @@
 import type {StudioDocument,StudioNode} from '../../../packages/schema/v2';
+import type {AssetSources} from '../../../packages/renderer/v2/assetSources';
 import {renderStaticDocument} from '../../../packages/renderer/v2/ssr';
 import {resolveDrop,type DropZone} from './drop';
 export type CanvasMessage={kind:'ready'}|{kind:'select';id:string}|{kind:'edit';id:string;text:string}|{kind:'drop';id:string;targetId:string;zone:DropZone};
@@ -25,16 +26,16 @@ export function parseCanvasMessage(value:unknown,channel:string,doc:StudioDocume
  }
  return null;
 }
-export function buildCanvasHTML(doc:StudioDocument,channel:string):string{
+export function buildCanvasHTML(doc:StudioDocument,channel:string,assets:AssetSources={}):string{
  if(!/^[a-zA-Z0-9-]+$/.test(channel))throw Error('Invalid canvas channel');
- const html=renderStaticDocument(doc);
+ const html=renderStaticDocument(doc,assets);
  const locked=new Set<string>();
  const walk=(id:string,ancestorLocked:boolean)=>{const node=doc.nodes[id],isLocked=ancestorLocked||node.flags.locked;if(isLocked)locked.add(id);node.children.forEach(child=>walk(child,isLocked));};
  walk(doc.rootId,false);
  const editable=Object.values(doc.nodes).filter(n=>!locked.has(n.id)&&['heading','text','button'].includes(n.type)).map(n=>n.id);
  const draggable=Object.values(doc.nodes).filter(n=>n.id!==doc.rootId&&!locked.has(n.id)).map(n=>n.id);
  const containers=Object.values(doc.nodes).filter(n=>['root','section','container'].includes(n.type)).map(n=>n.id);
- const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'nonce-'+channel+'\'; style-src \'unsafe-inline\'; img-src https:; base-uri \'none\'; form-action \'none\'">';
+ const csp='<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'nonce-'+channel+'\'; style-src \'unsafe-inline\'; img-src https: data:; base-uri \'none\'; form-action \'none\'">';
  const script=`<style>.sv-hover{outline:1px dashed #7864e8!important;outline-offset:-1px}.sv-selected{outline:2px solid #7864e8!important;outline-offset:-2px}.sv-page button:disabled{pointer-events:auto}.sv-drop-before{box-shadow:inset 0 3px #5945c2!important}.sv-drop-after{box-shadow:inset 0 -3px #5945c2!important}.sv-drop-inside{outline:3px dashed #5945c2!important;outline-offset:-3px}.sv-page [contenteditable]{cursor:text!important;white-space:pre-wrap}</style><script nonce="${channel}">
  (()=>{const channel=${JSON.stringify(channel)},editable=new Set(${JSON.stringify(editable)});
  const draggable=new Set(${JSON.stringify(draggable)}),containers=new Set(${JSON.stringify(containers)}),rootId=${JSON.stringify(doc.rootId)};

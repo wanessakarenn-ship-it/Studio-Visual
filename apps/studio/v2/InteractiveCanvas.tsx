@@ -1,12 +1,13 @@
 import {useEffect,useMemo,useRef} from 'react';
 import type {StudioDocument} from '../../../packages/schema/v2';
+import type {AssetSources} from '../../../packages/renderer/v2/assetSources';
 import {renderStaticDocument} from '../../../packages/renderer/v2/ssr';
 import type {DropZone} from './drop';
 import {buildCanvasHTML,parseCanvasMessage} from './bridge';
-type Props={document:StudioDocument;selectedId:string|null;preview:boolean;width:number;onSelect:(id:string)=>void;onEdit:(id:string,text:string)=>void;onDrop:(id:string,targetId:string,zone:DropZone)=>void};
-export function InteractiveCanvas({document,selectedId,preview,width,onSelect,onEdit,onDrop}:Props){
+type Props={assets:AssetSources;document:StudioDocument;selectedId:string|null;preview:boolean;width:number;onSelect:(id:string)=>void;onEdit:(id:string,text:string)=>void;onDrop:(id:string,targetId:string,zone:DropZone)=>void};
+export function InteractiveCanvas({assets,document,selectedId,preview,width,onSelect,onEdit,onDrop}:Props){
  const frame=useRef<HTMLIFrameElement>(null);
- const payload=useMemo(()=>{const channel=crypto.randomUUID();return {channel,html:preview?renderStaticDocument(document):buildCanvasHTML(document,channel)};},[document,preview]);
+ const payload=useMemo(()=>{const channel=crypto.randomUUID();return {channel,html:preview?renderStaticDocument(document,assets):buildCanvasHTML(document,channel,assets)};},[document,preview,assets]);
  useEffect(()=>{
   if(preview)return;
   const sendSelection=()=>frame.current?.contentWindow?.postMessage({channel:payload.channel,kind:'selection',id:selectedId},'*');

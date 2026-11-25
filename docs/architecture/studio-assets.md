@@ -1,0 +1,3 @@
+# Studio Assets
+IndexedDB stores raster images by UUID independently of schema v2. PNG/JPEG/WebP/GIF signatures, browser decoding, 5 MiB per file, 24 MP decoded dimensions, 50 MiB library. SSR uses constrained asset maps, missing assets remain placeholders. Editor supports external HTTPS, alt, decorative flag and fit. No remote upload or deletion. Restored BlockLibrary integration if missing.
+Pending real browser validation, portable ZIP backup, memory optimization, cloud backup. Signature and decoding are not malware scanning. JSON backup excludes asset bytes. No dependency changes, merge or deploy.
