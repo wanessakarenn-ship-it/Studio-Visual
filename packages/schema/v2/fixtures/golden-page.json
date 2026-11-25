@@ -1,0 +1,708 @@
+{
+  "schemaVersion": 2,
+  "id": "b5100800-0000-4000-8000-000000000100",
+  "title": "Studio Visual — Golden Page",
+  "rootId": "b5100800-0000-4000-8000-000000000001",
+  "nodes": {
+    "b5100800-0000-4000-8000-000000000001": {
+      "id": "b5100800-0000-4000-8000-000000000001",
+      "type": "root",
+      "name": "Página",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000002",
+        "b5100800-0000-4000-8000-000000000006",
+        "b5100800-0000-4000-8000-000000000018",
+        "b5100800-0000-4000-8000-000000000022"
+      ],
+      "styles": {
+        "base": {
+          "color": {
+            "token": "color.text"
+          },
+          "backgroundColor": {
+            "token": "color.surface"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000002": {
+      "id": "b5100800-0000-4000-8000-000000000002",
+      "type": "section",
+      "name": "Hero",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000003",
+        "b5100800-0000-4000-8000-000000000004",
+        "b5100800-0000-4000-8000-000000000005"
+      ],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.hero"
+          },
+          "paddingTop": {
+            "value": 80,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 80,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 32,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 32,
+            "unit": "px"
+          },
+          "display": "flex",
+          "flexDirection": "column",
+          "gap": {
+            "token": "space.4"
+          }
+        },
+        "mobile": {
+          "paddingTop": {
+            "value": 40,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 40,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 20,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      },
+      "anchor": "inicio"
+    },
+    "b5100800-0000-4000-8000-000000000003": {
+      "id": "b5100800-0000-4000-8000-000000000003",
+      "type": "heading",
+      "name": "Título principal",
+      "props": {
+        "text": "Da ideia à publicação.",
+        "level": 1
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "token": "fontSize.hero"
+          },
+          "fontWeight": 700
+        },
+        "tablet": {
+          "fontSize": {
+            "value": 48,
+            "unit": "px"
+          }
+        },
+        "mobile": {
+          "fontSize": {
+            "value": 36,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000004": {
+      "id": "b5100800-0000-4000-8000-000000000004",
+      "type": "text",
+      "name": "Descrição",
+      "props": {
+        "text": "Crie experiências digitais com liberdade."
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 20,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000005": {
+      "id": "b5100800-0000-4000-8000-000000000005",
+      "type": "button",
+      "name": "CTA principal",
+      "props": {
+        "label": "Começar agora",
+        "href": "#cta"
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.primary"
+          },
+          "color": {
+            "token": "color.white"
+          },
+          "paddingTop": {
+            "value": 12,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 12,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 24,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 24,
+            "unit": "px"
+          },
+          "borderRadius": {
+            "token": "radius.button"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000006": {
+      "id": "b5100800-0000-4000-8000-000000000006",
+      "type": "section",
+      "name": "Benefícios",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000007",
+        "b5100800-0000-4000-8000-000000000008"
+      ],
+      "styles": {
+        "base": {
+          "paddingTop": {
+            "value": 48,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 48,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 24,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 24,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000007": {
+      "id": "b5100800-0000-4000-8000-000000000007",
+      "type": "heading",
+      "name": "Benefícios",
+      "props": {
+        "text": "Crie do seu jeito.",
+        "level": 2
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 32,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000008": {
+      "id": "b5100800-0000-4000-8000-000000000008",
+      "type": "container",
+      "name": "Grid",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000009",
+        "b5100800-0000-4000-8000-000000000012",
+        "b5100800-0000-4000-8000-000000000015"
+      ],
+      "styles": {
+        "base": {
+          "display": "grid",
+          "gridColumns": 3,
+          "gap": {
+            "token": "space.4"
+          }
+        },
+        "tablet": {
+          "gridColumns": 2
+        },
+        "mobile": {
+          "gridColumns": 1
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000009": {
+      "id": "b5100800-0000-4000-8000-000000000009",
+      "type": "container",
+      "name": "Design",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000010",
+        "b5100800-0000-4000-8000-000000000011"
+      ],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.white"
+          },
+          "paddingTop": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 20,
+            "unit": "px"
+          },
+          "borderRadius": {
+            "token": "radius.button"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000010": {
+      "id": "b5100800-0000-4000-8000-000000000010",
+      "type": "heading",
+      "name": "Design",
+      "props": {
+        "text": "Design",
+        "level": 3
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 22,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000011": {
+      "id": "b5100800-0000-4000-8000-000000000011",
+      "type": "text",
+      "name": "Descrição",
+      "props": {
+        "text": "Identidade visual própria."
+      },
+      "children": [],
+      "styles": {
+        "base": {}
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000012": {
+      "id": "b5100800-0000-4000-8000-000000000012",
+      "type": "container",
+      "name": "Controle",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000013",
+        "b5100800-0000-4000-8000-000000000014"
+      ],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.white"
+          },
+          "paddingTop": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 20,
+            "unit": "px"
+          },
+          "borderRadius": {
+            "token": "radius.button"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000013": {
+      "id": "b5100800-0000-4000-8000-000000000013",
+      "type": "heading",
+      "name": "Controle",
+      "props": {
+        "text": "Controle",
+        "level": 3
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 22,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000014": {
+      "id": "b5100800-0000-4000-8000-000000000014",
+      "type": "text",
+      "name": "Descrição",
+      "props": {
+        "text": "Estrutura e edição previsíveis."
+      },
+      "children": [],
+      "styles": {
+        "base": {}
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000015": {
+      "id": "b5100800-0000-4000-8000-000000000015",
+      "type": "container",
+      "name": "Liberdade",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000016",
+        "b5100800-0000-4000-8000-000000000017"
+      ],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.white"
+          },
+          "paddingTop": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 20,
+            "unit": "px"
+          },
+          "borderRadius": {
+            "token": "radius.button"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000016": {
+      "id": "b5100800-0000-4000-8000-000000000016",
+      "type": "heading",
+      "name": "Liberdade",
+      "props": {
+        "text": "Liberdade",
+        "level": 3
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 22,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000017": {
+      "id": "b5100800-0000-4000-8000-000000000017",
+      "type": "text",
+      "name": "Descrição",
+      "props": {
+        "text": "Páginas responsivas sem código."
+      },
+      "children": [],
+      "styles": {
+        "base": {}
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000018": {
+      "id": "b5100800-0000-4000-8000-000000000018",
+      "type": "section",
+      "name": "CTA final",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000019",
+        "b5100800-0000-4000-8000-000000000020",
+        "b5100800-0000-4000-8000-000000000021"
+      ],
+      "styles": {
+        "base": {
+          "backgroundColor": {
+            "token": "color.text"
+          },
+          "color": {
+            "token": "color.white"
+          },
+          "paddingTop": {
+            "value": 48,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 48,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 24,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 24,
+            "unit": "px"
+          },
+          "textAlign": "center"
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      },
+      "anchor": "cta"
+    },
+    "b5100800-0000-4000-8000-000000000019": {
+      "id": "b5100800-0000-4000-8000-000000000019",
+      "type": "heading",
+      "name": "Convite",
+      "props": {
+        "text": "Sua próxima ideia começa aqui.",
+        "level": 2
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "fontSize": {
+            "value": 32,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000020": {
+      "id": "b5100800-0000-4000-8000-000000000020",
+      "type": "text",
+      "name": "Descrição",
+      "props": {
+        "text": "Explore o Studio Visual."
+      },
+      "children": [],
+      "styles": {
+        "base": {}
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000021": {
+      "id": "b5100800-0000-4000-8000-000000000021",
+      "type": "button",
+      "name": "Link",
+      "props": {
+        "label": "Voltar ao início",
+        "href": "#inicio"
+      },
+      "children": [],
+      "styles": {
+        "base": {
+          "color": {
+            "token": "color.white"
+          },
+          "backgroundColor": {
+            "token": "color.primary"
+          },
+          "paddingTop": {
+            "value": 12,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 12,
+            "unit": "px"
+          },
+          "paddingLeft": {
+            "value": 20,
+            "unit": "px"
+          },
+          "paddingRight": {
+            "value": 20,
+            "unit": "px"
+          }
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000022": {
+      "id": "b5100800-0000-4000-8000-000000000022",
+      "type": "section",
+      "name": "Rodapé",
+      "props": {},
+      "children": [
+        "b5100800-0000-4000-8000-000000000023"
+      ],
+      "styles": {
+        "base": {
+          "paddingTop": {
+            "value": 24,
+            "unit": "px"
+          },
+          "paddingBottom": {
+            "value": 24,
+            "unit": "px"
+          },
+          "textAlign": "center"
+        }
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    },
+    "b5100800-0000-4000-8000-000000000023": {
+      "id": "b5100800-0000-4000-8000-000000000023",
+      "type": "text",
+      "name": "Marca",
+      "props": {
+        "text": "Creative Digital Lab"
+      },
+      "children": [],
+      "styles": {
+        "base": {}
+      },
+      "flags": {
+        "hidden": false,
+        "locked": false
+      }
+    }
+  },
+  "tokens": {
+    "color": {
+      "text": "#242433",
+      "surface": "#F7F6F2",
+      "hero": "#E8E3FC",
+      "primary": "#5945C2",
+      "white": "#FFFFFF"
+    },
+    "space": {
+      "4": {
+        "value": 16,
+        "unit": "px"
+      }
+    },
+    "radius": {
+      "button": {
+        "value": 8,
+        "unit": "px"
+      }
+    },
+    "fontSize": {
+      "hero": {
+        "value": 64,
+        "unit": "px"
+      }
+    }
+  },
+  "metadata": {
+    "language": "pt-BR",
+    "description": "Página de referência do Studio Visual."
+  }
+}
