@@ -1,0 +1,28 @@
+name: Recover verified lockfile
+on:
+  push:
+    branches: [feat/studio-foundation]
+    paths: ['.github/workflows/recover-lockfile.yml']
+permissions:
+  contents: write
+  actions: read
+jobs:
+  recover:
+    if: github.repository == 'wanessakarenn-ship-it/Studio-Visual' && github.ref == 'refs/heads/feat/studio-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover exact verified artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test ! -e package-lock.json
+          gh run download 45669123705 --repo wanessakarenn-ship-it/Studio-Visual --name npm-lockfile --dir "$RUNNER_TEMP/verified-lock"
+          echo "854c83e69732eae2bc04e0e18d7ca3f4997f2640ed295ee42e790835c8aa0320  $RUNNER_TEMP/verified-lock/package-lock.json" | sha256sum -c -
+          cp "$RUNNER_TEMP/verified-lock/package-lock.json" package-lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- package-lock.json
+          git commit -m "chore: version verified npm lockfile"
+          git push origin HEAD:refs/heads/feat/studio-foundation
