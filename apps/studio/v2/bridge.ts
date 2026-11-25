@@ -1,4 +1,4 @@
-import type {StudioDocument} from '../../../packages/schema/v2';
+import type {StudioDocument,StudioNode} from '../../../packages/schema/v2';
 import {renderStaticDocument} from '../../../packages/renderer/v2/ssr';
 export type CanvasMessage={kind:'ready'}|{kind:'select';id:string}|{kind:'edit';id:string;text:string};
 export function parseCanvasMessage(value:unknown,channel:string,doc:StudioDocument):CanvasMessage|null{
@@ -8,7 +8,7 @@ export function parseCanvasMessage(value:unknown,channel:string,doc:StudioDocume
  if(value.kind==='select')return {kind:'select',id:value.id};
  const node=doc.nodes[value.id];
  if(value.kind==='edit'&&'text' in value&&typeof value.text==='string'&&value.text.length<=10000&&(node.type==='heading'||node.type==='text'||node.type==='button')){
-  let current= node;
+  let current:StudioNode= node;
   while(current){
    if(current.flags.locked)return null;
    const parent=Object.values(doc.nodes).find(n=>n.children.includes(current.id));
