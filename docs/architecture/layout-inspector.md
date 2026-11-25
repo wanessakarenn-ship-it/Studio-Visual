@@ -1,0 +1,3 @@
+# Layout Inspector
+Responsive controls for existing typed schema properties: flow/flex/grid, direction, wrap, alignment, distribution, columns, gap, width, max width, minimum height, four padding edges, vertical margins, background, radius, text alignment and opacity. Every write is validated by the core. Source breakpoint and token reference are displayed; reset removes only the current override. Numeric dimensions apply explicitly with supported units. No schema or dependency change.
+Limitations: CSS ancestor inheritance is not computed; token assignment UI and horizontal margins/explicit height are pending. No browser E2E or touch validation. Slider changes still generate separate history entries. Legacy editor untouched.
