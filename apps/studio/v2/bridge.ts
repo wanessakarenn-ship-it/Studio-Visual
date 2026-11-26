@@ -77,7 +77,8 @@ export function buildCanvasHTML(doc:StudioDocument,channel:string,assets:AssetSo
  else if(!mod&&!e.altKey)action=key==='delete'?'delete':key==='escape'?'escape':key==='f2'?'rename':null;
  if(action){if(e.repeat)return;e.preventDefault();send('shortcut',{action});}
  });
+ document.documentElement.setAttribute('data-studio-bridge-ready','true');
  send('ready');
  })();</script>`;
- return html.replace('<head>','<head>'+csp).replace(/<\/body>$/,script+'</body>').replace(/<\/body><\/html>$/,script+'</body></html>');
+ return html.replace('<head>',()=>'<head>'+csp).replace(/<\/body>(<\/html>)?\s*$/,(_,closing:string|undefined)=>script+'</body>'+(closing??''));
 }

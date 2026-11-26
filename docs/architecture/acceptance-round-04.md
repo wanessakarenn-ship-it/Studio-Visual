@@ -1,0 +1,2 @@
+# Acceptance round 04
+CI #60 passed. Browser #4 created and saved Golden Page, then timed out waiting for selected heading inspector. Root cause not yet established. Hardened script insertion with replacement callback, registered host bridge listener in layout effect and added iframe readiness marker and message diagnostics. Browser test waits for actual script initialization before interacting. Sandbox, nonce CSP, source/origin/channel checks preserved. Requires new CI evidence; no release or cloud provisioning.
