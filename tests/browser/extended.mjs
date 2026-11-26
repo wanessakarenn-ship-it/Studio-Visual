@@ -53,6 +53,7 @@ export async function performanceCheck(browser,root,out){
  const p95=a=>[...a].sort((x,y)=>x-y)[Math.ceil(a.length*.95)-1];
  const result={nodes:500,reopenMs,editP95Ms:p95(edit),undoP95Ms:p95(undo),edit,undo,environment:'Chromium GitHub Actions Ubuntu 24.04',thresholds:{reopenMs:1000,editP95Ms:100,undoP95Ms:100}};
  await writeFile(path.join(out,'performance.json'),JSON.stringify(result,null,2));
+ console.log('Performance metrics:',JSON.stringify({reopenMs:result.reopenMs,editP95Ms:result.editP95Ms,undoP95Ms:result.undoP95Ms,thresholds:result.thresholds}));
  assert.ok(reopenMs<=1000&&p95(edit)<=100&&p95(undo)<=100,'Performance budget exceeded (includes browser automation and iframe reload)');
  }finally{await page.close();}
 }
