@@ -56,7 +56,7 @@ export function buildCanvasHTML(doc:StudioDocument,channel:string,assets:AssetSo
  window.addEventListener('message',e=>{if(e.source!==parent||e.data?.channel!==channel||e.data?.kind!=='selection')return;select(typeof e.data.id==='string'?e.data.id:null);});
  let dragSource=null,marked=null;
  const clearDrop=()=>{if(marked)marked.classList.remove('sv-drop-before','sv-drop-after','sv-drop-inside');marked=null;};
- for(const id of draggable){const el=document.getElementsByClassName('sv-node-'+id)[0];if(el)el.setAttribute('draggable','true');}
+ for(const el of document.querySelectorAll('[class*="sv-node-"]')){if(draggable.has(idOf(el)))el.setAttribute('draggable','true');}
  const destination=e=>{
   const n=target(e.target),id=idOf(n);if(!n||!id||id===dragSource)return null;
   const r=n.getBoundingClientRect(),ratio=(e.clientY-r.top)/Math.max(r.height,1);
