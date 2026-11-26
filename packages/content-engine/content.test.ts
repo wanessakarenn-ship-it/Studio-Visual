@@ -1,0 +1,5 @@
+import {describe,it,expect} from 'vitest';
+import {newArticle,ArticleSchema,LibrarySchema,articleHTML,transition} from './index';
+import {auditArticle} from '../search-engine';
+const sample=()=>newArticle('b5100800-0000-4000-8000-000000000001');
+describe('content foundation',()=>{it('escapes untrusted HTML',()=>expect(articleHTML({...sample(),body:'<script>alert(1)</script>'})).not.toContain('<script>'));it('rejects unsafe sources',()=>expect(ArticleSchema.safeParse({...sample(),sources:[{title:'x',url:'javascript:alert(1)'}]}).success).toBe(false));it('rejects duplicate slug',()=>expect(LibrarySchema.safeParse([sample(),sample()]).success).toBe(false));it('requires review and author for approval',()=>expect(()=>transition(sample(),'approved')).toThrow());it('produces bounded local scores',()=>{const r=auditArticle(sample());expect(r.seo.score).toBeGreaterThanOrEqual(0);expect(r.geo.score).toBeLessThanOrEqual(100);});});
