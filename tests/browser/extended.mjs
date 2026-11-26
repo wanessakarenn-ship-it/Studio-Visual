@@ -47,7 +47,7 @@ export async function performanceCheck(browser,root,out){
  await page.evaluate(doc=>{localStorage.setItem('studio-visual-v2:'+doc.id,JSON.stringify({current:{revision:1,savedAt:new Date().toISOString(),document:doc},backup:null}));localStorage.setItem('studio-visual-v2-active',doc.id);},fixture);
  const started=performance.now();await page.reload();const frame=page.frameLocator('iframe[title="Canvas de edição"]');await frame.locator('h1').waitFor();const reopenMs=performance.now()-started;
  assert.equal(await frame.locator('[class*="sv-node-"]').count(),500);
- await frame.locator('h1').click();const input=page.getByLabel('Conteúdo',{exact:true});await input.waitFor();
+ await frame.locator('h1').click();const input=page.getByRole('textbox',{name:'Conteúdo',exact:true});await input.waitFor();
  const edit=[],undo=[];
  for(let i=0;i<20;i++){let t=performance.now();await input.fill('Stress edit '+i);await frame.locator('h1').filter({hasText:'Stress edit '+i}).waitFor();edit.push(performance.now()-t);t=performance.now();await page.getByRole('button',{name:'Desfazer',exact:true}).click();await frame.locator('h1').filter({hasText:'Da ideia à publicação.'}).waitFor();undo.push(performance.now()-t);}
  const p95=a=>[...a].sort((x,y)=>x-y)[Math.ceil(a.length*.95)-1];

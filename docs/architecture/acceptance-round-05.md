@@ -1,0 +1,2 @@
+# Acceptance round 05
+CI #62 passed. Browser #5 failed on exact Conteúdo label locator. Downloaded artifact 15088448479: diagnostics confirm ready, select with heading UUID ending 000003, and host selection response with same UUID. Bridge is functioning for this scenario. Explicit accessible name added to content textarea, test now verifies selected layer independently and locates textbox by role/name. New browser execution required. No sandbox relaxation, no deployment.
