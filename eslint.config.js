@@ -4,8 +4,9 @@ import hooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'node_modules/**'] },
+  { ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'artifacts/**'] },
   js.configs.recommended,
+  { files: ['tests/browser/*.mjs'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
