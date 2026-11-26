@@ -33,6 +33,7 @@ export function MoveControls({doc,id,command}:{doc:StudioDocument;id:string;comm
  const blocked=new Set(descendants(doc,id));
  const options=Object.values(doc.nodes).filter(n=>!blocked.has(n.id)&&acceptsChild(n.type,doc.nodes[id].type));
  const parent=options.find(n=>n.id===destination);
- const result=parent?moveNode(doc,id,{parentId:parent.id,index:parent.children.filter(child=>child!==id).length}):null;
- return <section className="move-controls"><label>Mover para contêiner<select value={parent?destination:''} onChange={e=>setDestination(e.target.value)}><option value="">Selecione o destino</option>{options.map(n=><option key={n.id} value={n.id}>{n.name||n.type} ({n.id.slice(-6)})</option>)}</select></label><button disabled={!result?.ok} onClick={()=>{if(result?.ok)command(result);}}>Mover para o final</button></section>;
+ // Validate the full graph only when the user actually commits a move.
+ const canMove=!!parent&&!doc.nodes[id].flags.locked&&!parent.flags.locked;
+ return <section className="move-controls"><label>Mover para contêiner<select value={parent?destination:''} onChange={e=>setDestination(e.target.value)}><option value="">Selecione o destino</option>{options.map(n=><option key={n.id} value={n.id}>{n.name||n.type} ({n.id.slice(-6)})</option>)}</select></label><button disabled={!canMove} onClick={()=>{if(parent)command(moveNode(doc,id,{parentId:parent.id,index:parent.children.filter(child=>child!==id).length}));}}>Mover para o final</button></section>;
 }
