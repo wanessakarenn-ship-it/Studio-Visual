@@ -1,9 +1,9 @@
-import {useRef,useState,type DragEvent} from 'react';
+import {memo,useRef,useState,type DragEvent} from 'react';
 import {acceptsChild,type StudioDocument} from '../../../packages/schema/v2';
 import {moveNode,parentOf,descendants,type Result} from '../../../packages/editor-core';
 import {resolveDrop,type DropZone} from './drop';
 type Props={doc:StudioDocument;selected:string|null;select:(id:string)=>void;command:(result:Result)=>void};
-export function LayerTree({doc,selected,select,command}:Props){
+function LayerTreeView({doc,selected,select,command}:Props){
  const source=useRef<string|null>(null);
  const [indicator,setIndicator]=useState<{id:string;zone:DropZone}|null>(null);
  const [collapsed,setCollapsed]=useState<Set<string>>(()=>new Set());
@@ -27,6 +27,13 @@ export function LayerTree({doc,selected,select,command}:Props){
  }
  return <><p className="layer-help">Arraste para antes, depois ou dentro. Também é possível mover pelo painel de propriedades.</p><ul>{row(doc.rootId,0)}</ul></>;
 }
+// Content-only edits do not affect the layer hierarchy or labels.
+export const LayerTree=memo(LayerTreeView,(previous,next)=>{
+ if(previous.selected!==next.selected||previous.doc.rootId!==next.doc.rootId)return false;
+ const a=previous.doc.nodes,b=next.doc.nodes,ids=Object.keys(a);
+ if(ids.length!==Object.keys(b).length)return false;
+ return ids.every(id=>{const x=a[id],y=b[id];return !!y&&(x===y||(x.type===y.type&&x.name===y.name&&x.flags.locked===y.flags.locked&&x.flags.hidden===y.flags.hidden&&x.children.length===y.children.length&&x.children.every((child,i)=>child===y.children[i])));});
+});
 export function MoveControls({doc,id,command}:{doc:StudioDocument;id:string;command:(result:Result)=>void}){
  const current=parentOf(doc,id);
  const [destination,setDestination]=useState(current?.id??'');
