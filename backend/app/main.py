@@ -63,3 +63,29 @@ def create_article(organization_id: UUID, article: ArticleInput, context=Depends
         return {"id":item,"revision_id":revision}
     except IntegrityError as exc:
         raise HTTPException(409,"Content conflict") from exc
+
+@app.get("/organizations/{organization_id}/articles/{article_id}")
+def get_article(organization_id: UUID, article_id: UUID, context=Depends(tenant_session)):
+    session, _ = context
+    row = session.execute(text("""
+        select i.id,i.title,i.slug,i.status,r.id as revision_id,r.payload
+        from content_items i
+        left join lateral (
+            select id,payload from content_revisions
+            where organization_id=i.organization_id and content_id=i.id
+            order by created_at desc,id desc limit 1
+        ) r on true
+        where i.organization_id=:org and i.id=:item
+    """), {"org":organization_id,"item":article_id}).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(404,"Article not found")
+    return dict(row)
+
+@app.get("/organizations/{organization_id}/articles/{article_id}/revisions")
+def article_revisions(organization_id: UUID, article_id: UUID, context=Depends(tenant_session)):
+    session, _ = context
+    params = {"org":organization_id,"item":article_id}
+    if session.execute(text("select id from content_items where organization_id=:org and id=:item"),params).scalar_one_or_none() is None:
+        raise HTTPException(404,"Article not found")
+    rows = session.execute(text("select id,payload,created_at from content_revisions where organization_id=:org and content_id=:item order by created_at desc,id desc limit 200"),params).mappings()
+    return [dict(row) for row in rows]
