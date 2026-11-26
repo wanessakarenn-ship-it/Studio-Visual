@@ -10,7 +10,7 @@ def test_tenant_isolation(monkeypatch):
         for org in (a,b):
             c.execute(text("insert into organizations(id,name) values (:id,'synthetic')"),{"id":org})
         for user in (u,v):
-            c.execute(text("insert into users(id,subject) values (:id,:id)"),{"id":user})
+            c.execute(text("insert into users(id,subject) values (:id,:subject)"),{"id":user,"subject":user})
         for org,user,role in ((a,u,"editor"),(b,v,"viewer")):
             c.execute(text("insert into organization_members values (:org,:usr,:role)"),{"org":org,"usr":user,"role":role})
     monkeypatch.setenv("APP_ENV","local-test")
