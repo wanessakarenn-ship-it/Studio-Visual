@@ -1,0 +1,29 @@
+import {chromium} from 'playwright';
+import {spawn} from 'node:child_process';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+const root=process.argv[2],out=path.join(root,'artifacts/browser');
+await mkdir(out,{recursive:true});
+const server=spawn(process.execPath,[path.join(root,'node_modules/vite/bin/vite.js'),'preview','--host','127.0.0.1','--port','4173','--strictPort'],{cwd:root,stdio:'inherit'});
+let browser,page;
+const report=[];
+async function check(name,fn){await fn();report.push({name,status:'passed'});console.log('PASS',name);}
+try{
+ for(let i=0;i<60;i++){try{if((await fetch('http://127.0.0.1:4173/studio-v2.html')).ok)break;}catch{}await new Promise(r=>setTimeout(r,500));}
+ browser=await chromium.launch({headless:true});
+ page=await browser.newPage({viewport:{width:1920,height:1080},acceptDownloads:true});
+ const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+ await page.goto('http://127.0.0.1:4173/studio-v2.html');
+ await check('Create Golden Page',async()=>{await page.getByRole('button',{name:'Abrir Golden Page',exact:true}).click();await page.getByRole('status').filter({hasText:'Salvo neste navegador'}).waitFor();});
+ const frame=()=>page.frameLocator('iframe[title="Canvas de edição"]');
+ await check('Render and select heading',async()=>{await frame().locator('h1').waitFor();await frame().locator('h1').click();await page.getByLabel('Conteúdo',{exact:true}).waitFor();});
+ await check('Edit and save heading',async()=>{await page.getByLabel('Conteúdo',{exact:true}).fill('Homologação Studio Visual');await page.getByRole('button',{name:'Salvar',exact:true}).click();await frame().locator('h1').filter({hasText:'Homologação Studio Visual'}).waitFor();await page.getByRole('status').filter({hasText:'Salvo neste navegador'}).waitFor();});
+ await check('Responsive viewport widths',async()=>{for(const [device,width] of [['base',1440],['tablet',768],['mobile',390]]){await page.getByLabel('Dispositivo').selectOption(device);const actual=await frame().locator('html').evaluate(()=>window.innerWidth);assert.equal(actual,width);await page.screenshot({path:path.join(out,device+'.png')});}});
+ await check('Reload preserves saved text',async()=>{await page.reload();await frame().locator('h1').filter({hasText:'Homologação Studio Visual'}).waitFor();});
+ await check('Upload and render local raster image',async()=>{await page.getByRole('button',{name:/Hero em duas colunas/}).click();await page.getByRole('button',{name:'Imagem',exact:true}).last().click();const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jR1sAAAAASUVORK5CYII=','base64');await page.getByLabel('Importar imagem').setInputFiles({name:'acceptance.png',mimeType:'image/png',buffer:png});await page.getByRole('button',{name:'acceptance.png'}).click();await frame().locator('img[src^="data:image/png"]').waitFor();assert.equal(await frame().locator('img[src^="data:image/png"]').first().evaluate(img=>img.complete&&img.naturalWidth>0),true);});
+ await check('Preview contains no editing scripts',async()=>{await page.getByRole('button',{name:'Prévia',exact:true}).click();const preview=page.frameLocator('iframe[title="Prévia isolada da página"]');await preview.locator('h1').waitFor();assert.equal(await preview.locator('script').count(),0);await page.getByRole('button',{name:'Editar',exact:true}).click();});
+ await check('Export ZIP download',async()=>{await page.getByRole('button',{name:'Exportar ZIP',exact:true}).click();const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Baixar ZIP',exact:true}).click();const download=await downloadPromise;await download.saveAs(path.join(out,'landing-page.zip'));assert.ok((await readFile(path.join(out,'landing-page.zip'))).length>100);});
+ await check('No uncaught application errors',async()=>assert.deepEqual(errors,[]));
+}catch(error){report.push({status:'failed',message:String(error)});if(page)await page.screenshot({path:path.join(out,'failure.png'),fullPage:true}).catch(()=>{});throw error;}
+finally{await writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2));await browser?.close();server.kill();}

@@ -6,7 +6,7 @@ export function createZip(entries:ZipEntry[]):Uint8Array<ArrayBuffer>{
  const encoder=new TextEncoder(),names=new Set<string>(),parts:Uint8Array[]=[],central:Uint8Array[]=[];
  let offset=0,centralSize=0;
  for(const entry of entries){
-  if(!/^[a-zA-Z0-9_.\/-]+$/.test(entry.name)||entry.name.split('/').some(p=>!p||p==='.'||p==='..')||names.has(entry.name))throw Error('Unsafe or duplicate ZIP entry');
+  if(!/^[a-zA-Z0-9_./-]+$/.test(entry.name)||entry.name.split('/').some(p=>!p||p==='.'||p==='..')||names.has(entry.name))throw Error('Unsafe or duplicate ZIP entry');
   names.add(entry.name);const name=encoder.encode(entry.name),size=entry.data.length,crc=crc32(entry.data);
   if(name.length>65535||size>0xffffffff||offset+size+30+name.length>0xffffffff)throw Error('ZIP32 size limit');
   const local=new Uint8Array(30+name.length),l=new DataView(local.buffer);
