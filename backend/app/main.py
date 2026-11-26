@@ -57,8 +57,9 @@ def create_article(organization_id: UUID, article: ArticleInput, context=Depends
     from sqlalchemy.exc import IntegrityError
     import json
     try:
-        item = session.execute(text("insert into content_items (organization_id,title,slug) values (:org,:title,:slug) returning id"),{"org":organization_id,"title":article.title,"slug":article.slug}).scalar_one()
-        revision = session.execute(text("insert into content_revisions (organization_id,content_id,payload) values (:org,:item,cast(:payload as jsonb)) returning id"),{"org":organization_id,"item":item,"payload":json.dumps(article.model_dump())}).scalar_one()
+        with session.begin_nested():
+            item = session.execute(text("insert into content_items (organization_id,title,slug) values (:org,:title,:slug) returning id"),{"org":organization_id,"title":article.title,"slug":article.slug}).scalar_one()
+            revision = session.execute(text("insert into content_revisions (organization_id,content_id,payload) values (:org,:item,cast(:payload as jsonb)) returning id"),{"org":organization_id,"item":item,"payload":json.dumps(article.model_dump())}).scalar_one()
         return {"id":item,"revision_id":revision}
     except IntegrityError as exc:
         raise HTTPException(409,"Content conflict") from exc
