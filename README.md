@@ -1,6 +1,8 @@
 # Studio Visual | Creative Digital Lab
 
-Independent visual editor. Early foundation prototype.
+Independent integrated SaaS platform for visual editing, content management, SEO/GEO, publishing, domains, forms, leads, analytics and supervised AI Copilot.
+
+Current delivery: foundation prototype; the integrated modules are architectural targets, not released features. See [integrated SaaS architecture and acceptance gates](docs/architecture/integrated-saas.md).
 
 ## Development
 
