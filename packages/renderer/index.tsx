@@ -1,0 +1,2 @@
+import type {StudioNode} from '../schema';
+export function RenderNode({node}:{node:StudioNode}){const style={color:node.color,fontSize:node.size,padding:node.padding,overflowWrap:'anywhere' as const};switch(node.kind){case 'heading':return <h2 style={style}>{node.text}</h2>;case 'button':return <button type="button" style={style}>{node.text}</button>;case 'section':return <section style={style}>{node.text}</section>;default:return <p style={style}>{node.text}</p>;}}

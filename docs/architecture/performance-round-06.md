@@ -1,0 +1,3 @@
+# Performance baseline
+Browser acceptance #6, commit 75f38e8: 500 nodes, reopen 168.57 ms (budget 1000), edit p95 96.80 ms (budget 100), undo p95 139.93 ms (budget 100). Nine earlier groups passed including independent ZIP, parity and exported page axe gate. Source artifact 15088214788, performance.json.
+MoveControls previously invoked moveNode (full graph validation) during every render, even when no move was requested. Defer this expensive command to explicit click; preserve core authorization and validation. This removes unnecessary validation on edit, undo and selection. Benchmarks unchanged; remeasure before claiming improvement. UI preliminary disabled state checks direct locks; core still validates ancestor locks and rejects invalid operations.

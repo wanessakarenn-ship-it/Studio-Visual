@@ -1,0 +1,20 @@
+import {describe,it,expect} from 'vitest';
+import golden from '../schema/v2/fixtures/golden-page.json';
+import {DocumentSchema,resolveStyle} from '../schema/v2';
+import {moveNode,duplicateNode,removeNode,updateProps,updateStyles,resetStyle,setNodeFlags,insertNode,descendants} from './index';
+import {createSession,applyResult,undo,redo,beginTransaction,commitTransaction,cancelTransaction} from './history';
+const id=(i:number)=>'b5100800-0000-4000-8000-'+String(i).padStart(12,'0');
+const fixture=()=>DocumentSchema.parse(golden);
+describe('editor core',()=>{
+ it('moves nodes across containers without changing the source',()=>{const d=fixture();const r=moveNode(d,id(10),{parentId:id(12),index:0});if(!r.ok)throw Error(r.error);expect(r.document.nodes[id(12)].children[0]).toBe(id(10));expect(d.nodes[id(9)].children).toContain(id(10));expect(r.document.nodes[id(2)]).toBe(d.nodes[id(2)]);});
+ it('rejects cycles and terminal parents',()=>{const d=fixture();expect(moveNode(d,id(8),{parentId:id(9),index:0})).toMatchObject({ok:false,error:'CYCLE'});expect(moveNode(d,id(10),{parentId:id(11),index:0}).ok).toBe(false);});
+ it('reorders within the same parent',()=>{const r=moveNode(fixture(),id(9),{parentId:id(8),index:2});if(!r.ok)throw Error(r.error);expect(r.document.nodes[id(8)].children).toEqual([id(12),id(15),id(9)]);});
+ it('duplicates a full subtree with new ids',()=>{const d=fixture();let i=200;const r=duplicateNode(d,id(9),()=>id(i++));if(!r.ok)throw Error(r.error);expect(descendants(r.document,r.selectedId!)).toEqual(expect.arrayContaining([id(200),id(201),id(202)]));expect(Object.keys(r.document.nodes)).toHaveLength(26);});
+ it('rejects duplicate IDs on insertion',()=>{const d=fixture();expect(insertNode(d,{rootId:id(10),nodes:{[id(10)]:d.nodes[id(10)]}},{parentId:id(9),index:0}).ok).toBe(false);});
+ it('removes an entire subtree and protects root',()=>{const d=fixture();const r=removeNode(d,id(9));if(!r.ok)throw Error(r.error);expect(r.document.nodes[id(10)]).toBeUndefined();expect(removeNode(d,d.rootId).ok).toBe(false);});
+ it('rejects edits under a locked ancestor',()=>{const r=setNodeFlags(fixture(),id(9),{locked:true});if(!r.ok)throw Error(r.error);expect(updateProps(r.document,id(10),{text:'x'}).ok).toBe(false);});
+ it('rejects invalid props and resets inherited style',()=>{const d=fixture();expect(updateProps(d,id(3),{level:7}).ok).toBe(false);const r=resetStyle(d,id(3),'mobile','fontSize');if(!r.ok)throw Error(r.error);expect(resolveStyle(r.document.nodes[id(3)].styles,'mobile').fontSize).toEqual({value:48,unit:'px'});});
+ it('undoes and redoes subtree removal',()=>{const d=fixture();const s=applyResult(createSession(d),removeNode(d,id(9)));expect(undo(s).document).toEqual(d);expect(redo(undo(s)).document).toEqual(s.document);});
+ it('groups continuous edits and cancels gestures',()=>{const d=fixture();let s=beginTransaction(createSession(d));s=applyResult(s,updateStyles(s.document,id(3),'base',{fontWeight:600}));s=applyResult(s,updateStyles(s.document,id(3),'base',{fontWeight:500}));expect(cancelTransaction(s).document).toBe(d);s=commitTransaction(s);expect(s.past).toHaveLength(1);expect(undo(s).document).toBe(d);});
+ it('clears redo after a new edit',()=>{const d=fixture();let s=applyResult(createSession(d),removeNode(d,id(9)));s=undo(s);s=applyResult(s,removeNode(s.document,id(12)));expect(s.future).toHaveLength(0);});
+});

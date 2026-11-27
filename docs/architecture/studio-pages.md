@@ -1,0 +1,3 @@
+# Studio Pages
+Local project browser discovers existing v2 document keys without changing their format. Search, saved timestamps/revisions, opening, copy, rename, raw recovery download and recovered-copy creation. Switching awaits current autosave and persists new documents before changing the active pointer. An in-flight guard prevents editor commands during switching. Copies share image asset references and retain node IDs scoped to their own document. No deletion, cloud sync or multi-tenant backend.
+Limitations: listing reads localStorage envelopes, refresh is explicit, duplication from browser uses saved revision, document storage is still localStorage with non-atomic cross-tab revision checks. Browser E2E and portable asset backup pending.

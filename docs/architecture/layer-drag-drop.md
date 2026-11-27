@@ -1,0 +1,3 @@
+# Layer drag and drop — initial implementation
+Native HTML drag and drop in layer panel; before/after/inside zones translate to post-removal core positions. Core validates every move. Only drop commits history. Expand/collapse controls and a keyboard-operable destination selector provide alternatives. No new dependencies. The native approach is an interim spike, not a decision to abandon Dnd-kit.
+Pending: real browser tests, touch/pointer DnD, Canvas iframe drop bridge, performance at 500 nodes, drag cancellation and contextual floating toolbar. Prior bridge TypeScript narrowing fixed explicitly. No merge/deploy.

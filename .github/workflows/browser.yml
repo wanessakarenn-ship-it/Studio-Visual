@@ -1,0 +1,38 @@
+name: Browser acceptance
+on: [pull_request]
+permissions:
+  contents: read
+concurrency:
+  group: browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Install isolated browser test runner
+        run: |
+          npm install --prefix "$RUNNER_TEMP/studio-e2e" --no-save --package-lock=false playwright@1.55.0 axe-core@4.10.3
+          "$RUNNER_TEMP/studio-e2e/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Run browser acceptance
+        run: |
+          cp tests/browser/*.mjs "$RUNNER_TEMP/studio-e2e/"
+          node "$RUNNER_TEMP/studio-e2e/acceptance.mjs" "$GITHUB_WORKSPACE"
+      - name: Verify archive with independent unzip
+        run: |
+          unzip -t artifacts/browser/landing-page.zip
+          python3 tests/browser/check_export.py artifacts/browser/landing-page.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: artifacts/browser/
+          if-no-files-found: warn
+      - run: git diff --exit-code -- package-lock.json

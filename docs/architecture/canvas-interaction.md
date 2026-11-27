@@ -1,0 +1,3 @@
+# Canvas interaction spike
+Editing iframe uses an opaque sandbox (allow-scripts only), a nonce-restricted internal bridge, and validated postMessage messages. Preview remains script-free. Selection and hover are visual; layer selection is synchronized. Double click on unlocked text, heading or button to edit plain text; Enter commits, Escape cancels, blur commits. One core command per commit. Inspector resolves explicit token values; CSS inheritance from ancestors is not yet computed. No arbitrary scripts or same-origin permission.
+Pending browser validation, floating contextual toolbar, keyboard commands, drag/drop, scroll preservation on document rerender and robust inline editing across browser/IME variations. Snapshot history remains provisional.

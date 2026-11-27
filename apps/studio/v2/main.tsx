@@ -1,0 +1,95 @@
+import {useEffect,useRef,useState,type ChangeEvent} from 'react';
+import {createRoot} from 'react-dom/client';
+import golden from '../../../packages/schema/v2/fixtures/golden-page.json';
+import {DocumentSchema,acceptsChild,resolveStyle,type StudioDocument,type StudioNode,type Breakpoint} from '../../../packages/schema/v2';
+import {insertNode,moveNode,duplicateNode,removeNode,updateProps,updateStyles,resetStyle,renameNode,setNodeFlags,parentOf,type Result} from '../../../packages/editor-core';
+import {createSession,applyResult,undo,redo,type Session} from '../../../packages/editor-core/history';
+import {LocalStorageAdapter,exportJSON,importJSON,readLegacy,recoverAsCopy,type LoadResult} from '../../../packages/storage';
+import {Autosave,type SaveState} from '../../../packages/storage/autosave';
+import {shortcutFor,type Shortcut} from './shortcuts';
+import {copySubtree,pasteSubtree,type ComponentClipboard} from '../../../packages/editor-core/clipboard';
+import {ExportPanel} from './ExportPanel';
+import {resolveDrop} from './drop';
+import {InteractiveCanvas} from './InteractiveCanvas';
+import {LayerTree,MoveControls} from './LayerTree';
+import {BlockLibrary} from './BlockLibrary';
+import {AssetLibrary,ImageInspector,useAssets} from './AssetLibrary';
+import {PagesPanel} from './PagesPanel';
+import {renamePage,copyPage} from '../../../packages/pages';
+import {BrandPanel,TokenBinding} from './BrandPanel';
+import {LayoutInspector} from './LayoutInspector';
+import {resolveInspectorValue} from './inspector';
+import './studio.css';
+const storage=new LocalStorageAdapter(localStorage);
+const pointer='studio-visual-v2-active';
+const uid=()=>crypto.randomUUID();
+type Kind='section'|'container'|'heading'|'text'|'button'|'divider'|'image';
+const labels:Record<Kind,string>={section:'Seção',container:'Contêiner',heading:'Título',text:'Texto',button:'Botão',divider:'Divisor',image:'Imagem'};
+function fresh(example:boolean):StudioDocument{
+ if(example)return DocumentSchema.parse({...golden,id:uid()});
+ const rootId=uid(),id=uid();return DocumentSchema.parse({schemaVersion:2,id,title:'Nova página',rootId,nodes:{[rootId]:{id:rootId,type:'root',name:'Página',props:{},children:[],styles:{base:{}},flags:{hidden:false,locked:false}}},tokens:{color:{},space:{},radius:{},fontSize:{}},metadata:{language:'pt-BR'}});
+}
+function newNode(type:Kind):StudioNode{
+ const base={id:uid(),name:labels[type],children:[],styles:{base:{}},flags:{hidden:false,locked:false}};
+ switch(type){case 'image':return {...base,type,props:{src:{kind:'placeholder'},alt:'',decorative:false,fit:'contain'}};case 'heading':return {...base,type,props:{text:'Novo título',level:2}};case 'text':return {...base,type,props:{text:'Seu texto aqui'}};case 'button':return {...base,type,props:{label:'Saiba mais'}};default:return {...base,type,props:{}};}
+}
+function download(raw:string,name:string){const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+function App(){
+ const [session,setSession]=useState<Session|null>(null),[device,setDevice]=useState<Breakpoint>('base'),[status,setStatus]=useState<SaveState>('dirty'),[message,setMessage]=useState(''),[preview,setPreview]=useState(false),[recovery,setRecovery]=useState<LoadResult|null>(null);
+ const saver=useRef<Autosave|null>(null),latest=useRef<Session|null>(null);
+ const [busy,setBusy]=useState(false);
+ const [pagesOpen,setPagesOpen]=useState(false);
+ const switching=useRef(false);
+ const clipboard=useRef<ComponentClipboard|null>(null);
+ const [hasClipboard,setHasClipboard]=useState(false);
+ const [zoom,setZoom]=useState(0.75);
+ const nameInput=useRef<HTMLInputElement>(null);
+ const {assets,sources,error:assetError,upload}=useAssets();
+ function open(doc:StudioDocument,revision:number|null){
+  saver.current?.dispose();
+  saver.current=new Autosave(storage,doc.id,revision,(state,error)=>{setStatus(state);if(error)setMessage(String(error));});
+  const next=createSession(doc);latest.current=next;setSession(next);setRecovery(null);setPreview(false);setPagesOpen(false);setStatus(revision===null?'dirty':'saved');
+  try{localStorage.setItem(pointer,doc.id);}catch(e){setMessage(String(e));}
+  if(revision===null)saver.current.schedule(doc);
+ }
+ useEffect(()=>{let active=true;async function restore(){try{const id=localStorage.getItem(pointer);if(!id)return;const r=await storage.load(id);if(!active)return;if(r.status==='ready')open(r.value.document,r.value.revision);else if(r.status!=='empty')setRecovery(r);}catch(e){if(active)setMessage(String(e));}}void restore();return()=>{active=false;saver.current?.dispose();};},[]);
+ useEffect(()=>{const handler=(e:BeforeUnloadEvent)=>{if(status==='dirty'||status==='saving'||status==='error'){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',handler);return()=>window.removeEventListener('beforeunload',handler);},[status]);
+ function change(next:Session){if(switching.current)return;const old=latest.current;if(next===old)return;latest.current=next;setSession(next);if(next.document!==old?.document)saver.current?.schedule(next.document);}
+ function command(result:Result){if(switching.current)return;if(!result.ok){setMessage(result.error);return;}setMessage('');if(latest.current)change(applyResult(latest.current,result));}
+ async function switchDocument(doc:StudioDocument){if(switching.current)return;switching.current=true;setBusy(true);try{await saver.current?.flush();const saved=await storage.save(doc,null);open(saved.document,saved.revision);}catch(e){setMessage('Não foi possível trocar de documento: '+String(e));}finally{switching.current=false;setBusy(false);}}
+ async function openSaved(id:string){if(switching.current)return;switching.current=true;setBusy(true);try{await saver.current?.flush();const r=await storage.load(id);if(r.status==='ready')open(r.value.document,r.value.revision);else if(r.status==='recovered'){setMessage('Versão anterior disponível. Recupere como nova cópia pelo painel.');}else setMessage('Documento indisponível. Original preservado.');}catch(e){setMessage(String(e));}finally{switching.current=false;setBusy(false);}}
+ async function importFile(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];e.target.value='';if(!file)return;try{if(file.size>32*1024*1024)throw Error('Arquivo excede o limite');const doc=importJSON(await file.text(),uid);await switchDocument(DocumentSchema.parse({...doc,id:uid()}));}catch(err){setMessage(String(err));}}
+ function select(id:string){if(latest.current)change({...latest.current,selectedId:id});}
+ const doc=session?.document,selected=doc&&session?.selectedId?doc.nodes[session.selectedId]:undefined;
+ function add(type:Kind){if(!doc)return;const n=newNode(type);let parent=selected&&acceptsChild(selected.type,type)?selected:selected?parentOf(doc,selected.id):undefined;while(parent&&!acceptsChild(parent.type,type))parent=parentOf(doc,parent.id);parent??=doc.nodes[doc.rootId];if(!acceptsChild(parent.type,type)){setMessage('Adicione uma seção ou contêiner primeiro.');return;}command(insertNode(doc,{rootId:n.id,nodes:{[n.id]:n}},{parentId:parent.id,index:parent.children.length}));}
+ function reorder(delta:number){if(!doc||!selected)return;const p=parentOf(doc,selected.id);if(p)command(moveNode(doc,selected.id,{parentId:p.id,index:p.children.indexOf(selected.id)+delta}));}
+ function action(action:Shortcut){
+  if(switching.current||pagesOpen)return;
+  const s=latest.current;if(!s)return;
+  if(action==='save'){void saver.current?.flush().catch(e=>setMessage(String(e)));return;}
+  if(preview)return;
+  if(action==='undo'){change(undo(s));return;}
+  if(action==='redo'){change(redo(s));return;}
+  if(action==='escape'){change({...s,selectedId:null});return;}
+  const id=s.selectedId;
+  if(action==='paste'){if(clipboard.current)command(pasteSubtree(s.document,clipboard.current,id,uid));return;}
+  if(!id||id===s.document.rootId)return;
+  if(action==='copy'){const data=copySubtree(s.document,id);if(data){clipboard.current=data;setHasClipboard(true);setMessage('Componente copiado na sessão.');}return;}
+  if(action==='duplicate')command(duplicateNode(s.document,id,uid));
+  if(action==='delete')command(removeNode(s.document,id));
+  if(action==='rename'){nameInput.current?.focus();nameInput.current?.select();}
+  if(action==='up'||action==='down'){const p=parentOf(s.document,id);if(p)command(moveNode(s.document,id,{parentId:p.id,index:p.children.indexOf(id)+(action==='up'?-1:1)}));}
+ }
+ useEffect(()=>{const listener=(event:KeyboardEvent)=>{const target=event.target;const editing=target instanceof HTMLElement&&(target.isContentEditable||!!target.closest('input,textarea,select,[contenteditable=true]'));const a=shortcutFor(event,editing);if(!a||!latest.current||pagesOpen||(preview&&a!=='save'))return;event.preventDefault();action(a);};window.addEventListener('keydown',listener);return()=>window.removeEventListener('keydown',listener);});
+ const style=selected?resolveStyle(selected.styles,device):{};
+ const color=doc?resolveInspectorValue(style.color,doc.tokens):undefined;
+ const font=doc?resolveInspectorValue(style.fontSize,doc.tokens):undefined;
+ const stateLabel={dirty:'Alterações não salvas',saving:'Salvando…',saved:'Salvo neste navegador',error:'Falha ao salvar'}[status];
+ return <div className="studio"><header className="toolbar"><a href="./" className="brand">Studio Visual <small>Creative Digital Lab</small></a><span role="status">{doc?stateLabel:'Canvas v2 experimental'}</span>{session&&<><button disabled={!session.past.length} onClick={()=>change(undo(session))}>Desfazer</button><button disabled={!session.future.length} onClick={()=>change(redo(session))}>Refazer</button><select aria-label="Dispositivo" value={device} onChange={e=>setDevice(e.target.value as Breakpoint)}><option value="base">Desktop</option><option value="tablet">Tablet</option><option value="mobile">Mobile</option></select><button onClick={()=>setPreview(!preview)}>{preview?'Editar':'Prévia'}</button><button onClick={()=>{void saver.current?.flush().catch(e=>setMessage(String(e)));}}>Salvar</button><button onClick={()=>download(exportJSON(session.document),'studio-page.json')}>Backup JSON</button><ExportPanel document={session.document} assets={assets}/></>}<button onClick={()=>setPagesOpen(v=>!v)}>{pagesOpen?'Voltar':'Minhas páginas'}</button><a href="./">Editor legado</a></header>
+ {message&&<p className="notice" role="alert">{message}<button onClick={()=>setMessage('')}>Fechar</button></p>}
+ {pagesOpen?<PagesPanel storage={storage} busy={busy} activeId={doc?.id} onOpen={id=>void openSaved(id)} onNew={example=>void switchDocument(fresh(example))} onCopy={d=>void switchDocument(copyPage(d,uid()))} onRecover={r=>void switchDocument(recoverAsCopy(r,uid()))} onRaw={raw=>download(raw,'studio-recovery.json')}/>:!doc?<main className="welcome"><h1>Crie sua próxima página</h1><p>Os documentos ficam neste navegador. Exporte backups regularmente.</p>{recovery&&recovery.status!=='empty'&&recovery.status!=='ready'&&<section className="notice"><p>Documento inválido. O original foi preservado.</p><button onClick={()=>download(recovery.raw,'studio-recovery.json')}>Baixar dados originais</button>{recovery.status==='recovered'&&<button onClick={()=>void switchDocument(recoverAsCopy(recovery,uid()))}>Recuperar como cópia</button>}</section>}<button disabled={busy} onClick={()=>void switchDocument(fresh(false))}>Página em branco</button><button disabled={busy} onClick={()=>void switchDocument(fresh(true))}>Abrir Golden Page</button><button onClick={()=>{try{const r=readLegacy(localStorage,uid);if(r)void switchDocument(r.document);else setMessage('Nenhum documento legado encontrado.');}catch(e){setMessage(String(e));}}}>Importar legado</button><label>Importar JSON<input type="file" accept=".json,application/json" onChange={e=>void importFile(e)}/></label></main>:<main className={'editor '+(preview?'preview':'')}>
+ {!preview&&<aside><h2>Elementos</h2><div className="elements">{(Object.keys(labels) as Kind[]).map(type=><button key={type} onClick={()=>add(type)}>{labels[type]}</button>)}</div><BlockLibrary doc={doc} selectedId={session?.selectedId??null} command={command}/><AssetLibrary assets={assets} sources={sources} error={assetError} upload={upload} onChoose={id=>{const current=latest.current?.document;const selectedId=latest.current?.selectedId;const n=selectedId?current?.nodes[selectedId]:undefined;if(current&&n?.type==='image')command(updateProps(current,n.id,{src:{kind:'asset',assetId:id}}));else setMessage('Selecione uma imagem no Canvas primeiro.');}}/><BrandPanel key={doc.id} doc={doc} command={command}/><h2>Camadas</h2><LayerTree doc={doc} selected={session?.selectedId??null} select={select} command={command}/></aside>}
+ <section className="workspace"><div className="workspace-label">{doc.title} · {device==='base'?'1440':device==='tablet'?'768':'390'} px</div><div className="canvas-actions"><label>Zoom<select value={zoom} onChange={e=>setZoom(Number(e.target.value))}>{[.25,.5,.75,1].map(z=><option key={z} value={z}>{Math.round(z*100)}%</option>)}</select></label>{!preview&&<><button disabled={!selected||selected.id===doc.rootId} onClick={()=>action('copy')}>Copiar</button><button disabled={!hasClipboard} onClick={()=>action('paste')}>Colar</button><button disabled={!selected||selected.id===doc.rootId} onClick={()=>action('duplicate')}>Duplicar</button><button disabled={!selected||selected.id===doc.rootId} onClick={()=>action('delete')}>Excluir</button></>}</div><InteractiveCanvas zoom={zoom} onShortcut={action} assets={sources} document={doc} selectedId={session?.selectedId??null} preview={preview} width={device==='base'?1440:device==='tablet'?768:390} onSelect={select} onDrop={(id,targetId,zone)=>{const current=latest.current?.document;if(current)command(resolveDrop(current,id,targetId,zone));}} onEdit={(id,text)=>{const current=latest.current?.document;const n=current?.nodes[id];if(current&&n&&(n.type==='heading'||n.type==='text'||n.type==='button'))command(updateProps(current,id,n.type==='button'?{label:text}:{text}));}}/></section>
+ {!preview&&<aside><h2>Propriedades</h2><label>Nome da página<input key={doc.id+doc.title} defaultValue={doc.title} maxLength={200} onBlur={e=>{if(e.target.value.trim()!==doc.title)command(renamePage(doc,e.target.value));}}/></label><button disabled={busy} onClick={()=>void switchDocument(copyPage(doc,uid()))}>Duplicar página</button>{selected?<><label>Nome<input ref={nameInput} value={selected.name} maxLength={120} onChange={e=>command(renameNode(doc,selected.id,e.target.value))}/></label>{(selected.type==='heading'||selected.type==='text'||selected.type==='button')&&<label>Conteúdo<textarea aria-label="Conteúdo" value={selected.type==='button'?selected.props.label:selected.props.text} maxLength={10000} onChange={e=>command(updateProps(doc,selected.id,selected.type==='button'?{label:e.target.value}:{text:e.target.value}))}/></label>}{selected.type==='heading'&&<label>Nível<select value={selected.props.level} onChange={e=>command(updateProps(doc,selected.id,{level:Number(e.target.value)}))}>{[1,2,3,4,5,6].map(n=><option key={n} value={n}>H{n}</option>)}</select></label>}{selected.type==='button'&&<label>Link<input key={selected.id} defaultValue={selected.props.href??''} onBlur={e=>command(updateProps(doc,selected.id,{href:e.target.value||undefined}))}/></label>}<label>Cor<input type="color" value={typeof color==='string'?color.slice(0,7):'#242433'} onChange={e=>command(updateStyles(doc,selected.id,device,{color:e.target.value}))}/></label><button onClick={()=>command(resetStyle(doc,selected.id,device,'color'))}>Restaurar cor herdada</button><label>Tamanho (px)<input type="number" min={1} max={200} defaultValue={typeof font==='object'&&font!==null&&'unit' in font&&font.unit==='px'&&'value' in font?String(font.value):''} key={selected.id+device+JSON.stringify(font)} onBlur={e=>{if(e.target.value!==''&&e.target.value!==e.target.defaultValue)command(updateStyles(doc,selected.id,device,{fontSize:{value:Number(e.target.value),unit:'px'}}));}}/></label>{selected.type==='image'&&<ImageInspector key={selected.id} node={selected} update={props=>command(updateProps(doc,selected.id,props))}/>}<TokenBinding key={selected.id+device} doc={doc} node={selected} breakpoint={device} command={command}/><LayoutInspector key={selected.id+device} doc={doc} node={selected} breakpoint={device} command={command}/>{selected.id!==doc.rootId&&<><label><input type="checkbox" checked={selected.flags.hidden} onChange={e=>command(setNodeFlags(doc,selected.id,{hidden:e.target.checked}))}/>Ocultar</label><label><input type="checkbox" checked={selected.flags.locked} onChange={e=>command(setNodeFlags(doc,selected.id,{locked:e.target.checked}))}/>Bloquear</label><MoveControls key={selected.id} doc={doc} id={selected.id} command={command}/><button onClick={()=>reorder(-1)}>Subir</button><button onClick={()=>reorder(1)}>Descer</button><button onClick={()=>command(duplicateNode(doc,selected.id,uid))}>Duplicar</button><button onClick={()=>command(removeNode(doc,selected.id))}>Excluir</button></>}</>:<p>Selecione uma camada para editar.</p>}<hr/><button disabled={busy} onClick={()=>void switchDocument(fresh(false))}>Nova página</button><button disabled={busy} onClick={()=>void switchDocument(fresh(true))}>Nova Golden Page</button><label>Importar cópia JSON<input type="file" accept=".json,application/json" onChange={e=>void importFile(e)}/></label></aside>}</main>}</div>;
+}
+createRoot(document.getElementById('root')!).render(<App/>);

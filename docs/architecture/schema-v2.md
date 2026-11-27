@@ -1,0 +1,4 @@
+# Schema v2 — initial contract
+Added alongside v1; the live Studio still uses v1. Normalized root and child references, discriminated node types, strict style values, typed token categories, desktop/tablet/mobile overrides, explicit migration and structural validation.
+Migration preserves all legacy text, size, color, padding, IDs and order. Legacy sections become text because they had no hierarchy. Legacy heading level remains h2. The initial node limit is 502 including root and wrapper, preserving the maximum 500 legacy nodes. Button labels retain the legacy 10000-character limit. Migration does not write storage.
+Pending: golden fixture, additional boundary tests, asset resolution, token value resolution in renderer, independent SSR, UI integration and recovery. Do not switch the live storage key until recovery is implemented.

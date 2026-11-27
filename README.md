@@ -1,24 +1,13 @@
 # Studio Visual | Creative Digital Lab
 
-Tecnologia, criatividade e inteligência em movimento.
+Independent integrated SaaS platform for visual editing, content management, SEO/GEO, publishing, domains, forms, leads, analytics and supervised AI Copilot.
 
-Independent visual web creation platform. The initial MVP focuses on creating, editing, saving, previewing and exporting responsive pages from a versioned structured document.
+Current delivery: foundation prototype; the integrated modules are architectural targets, not released features. See [integrated SaaS architecture and acceptance gates](docs/architecture/integrated-saas.md).
 
-## Architecture
+## Development
 
-TypeScript monorepo with React dashboard, shared schema and renderer. Backend, authentication, tenant isolation and publishing will be introduced incrementally. No corporate source code, assets or credentials are included.
+Node 22, npm ci, npm run dev. Run npm run typecheck, npm run lint, npm test and npm run build before merging. Local persistence only. No production deployment authorized. See docs/architecture/foundation.md.
 
-## Roadmap
+Public repository; license decision pending. No corporate assets or code.
 
-- Foundation: schema, design system, tooling and tests.
-- Editor: components, contextual properties, history and persistence.
-- Export: responsive semantic HTML/CSS and independent preview.
-- SaaS: authentication, workspaces, forms, leads and publishing.
-
-## Status
-
-Foundation in progress. Not production ready. No deployment authorized.
-
-## Governance
-
-Use feature branches and reviewed pull requests. Do not commit secrets or third-party proprietary material. Licensing remains to be decided by the owner; public visibility is not a license grant.
+Editor entrypoint: apps/studio/main.tsx. The dashboard name is reserved for future project management.

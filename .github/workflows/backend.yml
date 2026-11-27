@@ -1,0 +1,45 @@
+name: Backend foundation
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: studio
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:ci-only-password@localhost:5432/studio
+      DATABASE_URL: postgresql+psycopg://studio_app:ci-only-app-password@localhost:5432/studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt
+      - run: alembic upgrade head
+      - name: Create restricted CI app role
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine
+          with create_engine(os.environ['MIGRATION_DATABASE_URL']).begin() as c:
+              c.exec_driver_sql("CREATE ROLE studio_app LOGIN PASSWORD 'ci-only-app-password' NOSUPERUSER NOBYPASSRLS")
+              c.exec_driver_sql("GRANT USAGE ON SCHEMA public TO studio_app")
+              c.exec_driver_sql("GRANT SELECT ON organization_members TO studio_app")
+              c.exec_driver_sql("GRANT SELECT, INSERT ON content_items, content_revisions TO studio_app")
+          PY
+      - run: python -m pytest -q
+      - run: alembic downgrade base
+      - run: alembic upgrade head

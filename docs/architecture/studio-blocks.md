@@ -1,0 +1,3 @@
+# Studio Blocks — initial library
+Five original block factories: centered hero, split hero, responsive benefits, conversion CTA, essential footer. Each creates fresh validated IDs, literal styles (no dependency on document token names), and one subtree insertion at the root after the selected top-level section or at the end. Existing H1 is respected. CTA links are intentionally unset; image is a placeholder. Insertion is one undoable operation. Searchable local catalog with illustrative CSS thumbnails.
+Pending: custom block saving, local assets, image inspector, brand token assignment, project browser, shortcuts and browser E2E. No dependency changes or deployment.
